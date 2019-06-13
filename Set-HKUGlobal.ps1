@@ -1,8 +1,13 @@
 Function Set-HKCUGlobal {
 	[CmdletBinding()]
 	Param (
-		[parameter( Mandatory, HelpMessage = "ScriptBlock containing your registry settings using RegPath as HKCU")]
-		[ScriptBlock]$ScriptBlock
+		[String] $Path,
+		[String] $Name,
+		[Parameter()]
+		[ValidateSet('String','ExpandString','Binary','DWord','MultiString','Qword','Unknown')]
+		[string[]]
+		$PropertyType, 
+		[object] $Value
 	)
 	begin {
 		Write-Host "Calling Begin Block"
@@ -55,7 +60,15 @@ Function Set-HKCUGlobal {
 				}
 				Write-Host "Creating registy settings for this user..."
 				Try {
-					Invoke-Command -ScriptBlock $ScriptBlock
+					# Do Stuff Here
+					If (-not $(Test-Path -Path "$RegPath\$Key")){
+						#Case: Key does not exist
+						Write-Output "Key does not exits for this user"
+					} else {
+						#Key does exist!
+						Write-Host "Key Exists for this user!"
+						New-ItemProperty -Path "$RegPath\$Key" -Name "$Name" -PropertyType "$Type" -Value "$Value" -Force >> $Logfile
+					}
 				} Catch {
 					Write-Host "An error was encountered while creating registry settings for the current user."
 					Write-Host "$Error"
