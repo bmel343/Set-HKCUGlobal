@@ -7,12 +7,14 @@ Works almost identically to the New-ItemProperty cmdlet that you would normally 
 Set-ItemProperty -Path "HKCU:\Software\Microsoft\Office\16.0\Lync" -Name "DisableRicherEditCanSetReadOnly" -Type "String" -Value 1
 
 Becomes:
-
+```PowerShell
 Set-HKCUGlobal -Path "\Software\Microsoft\Office\16.0\Lync" -Name "DisableRicherEditCanSetReadOnly" -Type "String" -Value 1
-
+```
 New!: Now supports -Verbose switch for verbose output!
+```PowerShell
 Set-HKCUGlobal -Path "\Software\Microsoft\Office\16.0\Lync" -Name "DisableRicherEditCanSetReadOnly" -Type "String" -Value 1 -Verbose
 ```
+```PowerShell
 .\Set-HKUGlobal.ps1 -Verbose
 VERBOSE: Calling Begin Block
 VERBOSE: Trying to generate array of all system user information
