@@ -5,22 +5,17 @@ Function Set-HKCUGlobal {
 		[String] $Name,
 		[Parameter()]
 		[ValidateSet('String','ExpandString','Binary','DWord','MultiString','Qword','Unknown')]
-		[string[]]
-		$PropertyType, 
+		[string[]]$Type, 
 		[object] $Value
 	)
 	begin {
-		Write-Host "Calling Begin Block"
+		Write-Verbose "Calling Begin Block"
 		$ProfileList = @()
 		$UnloadedHives = @()
 		$PatternSID = 'S-1-5-21-\d+-\d+\-\d+\-\d+$'
-		Function Write-Log {
-		   Param ([string]$logstring)
-		   Write-Host $logstring
-		}
 		Function Get-ProfileList{
 			Try {
-				Write-Host "Trying to generate array of all system user information"
+				Write-Verbose "Trying to generate array of all system user information"
 				$ProfileList += $(Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\*" `
 					| Where-Object {$_.PSChildName -match $PatternSID} `
 					| Select @{name="SID";expression={$_.PSChildName}},
@@ -30,9 +25,9 @@ Function Set-HKCUGlobal {
 				#Add Default User to profile list manually so that changes affect new users on this system
 				$ProfileList += $([pscustomobject]@{'SID'="DefUser";'UserHive'="C:\Users\Default\NTUSER.DAT";'Username'="Default"})
 			} Catch {
-				Write-Host "Something went wrong while collecting system user information"
+				Write-Error -Message "Something went wrong while collecting system user information"
 			}
-			Write-Host "Successfully found user info.."
+			Write-Verbose "Successfully found user info.."
 			# Get all user SIDs found in HKEY_USERS (ntuder.dat files that are loaded)
 			$LoadedHives = gci Registry::HKEY_USERS | ? {$_.PSChildname -match $PatternSID} `
 				| Select @{name="SID";expression={$_.PSChildName}} | % {$_.SID}
@@ -41,44 +36,44 @@ Function Set-HKCUGlobal {
 			Return $ProfileList,$UnloadedHives
 		}
 		Function Commit-RegistrySettings([Object] $ProfileList,[Object] $UnloadedHives){
-			Write-Host "$ProfileList"
+			Write-Verbose "$ProfileList"
 			foreach ($Profile in $ProfileList) {
 				$RegPath = "Registry::\HKEY_USERS\$($Profile.SID)"
-				Write-Host "-----------Start Pass-----------"
-				Write-Host "The Current User is : $($Profile.Username)"
+				Write-Verbose "-----------Start Pass-----------"
+				Write-Verbose "The Current User is : $($Profile.Username)"
 				# Load User ntuser.dat if it's not already loaded
 				IF ($UnloadedHives -contains $Profile.SID) {
-					Write-Host "The registry hive for Current User: $($Profile.Username) is not loaded. Attempting to load..."
-					Write-Host "...."
+					Write-Verbose "The registry hive for Current User: $($Profile.Username) is not loaded. Attempting to load..."
+					Write-Verbose "...."
 					Try {
 						reg load HKU\$($Profile.SID) $($Profile.UserHive) | Out-Null
-						Write-Host "Hive loaded succesfully"
+						Write-Verbose "Hive loaded succesfully"
 					} Catch {
-						Write-Host "An unexpected error has occured while attempting to load the registry hive."
-						Write-Host "No changes will be made for this user"
+						Write-Error "An unexpected error has occured while attempting to load the registry hive."
+						Write-Error "No changes will be made for this user"
 					}	
 				}
-				Write-Host "Creating registy settings for this user..."
+				Write-Verbose "Creating registy settings for this user..."
 				Try {
 					# Do Stuff Here
 					If (-not $(Test-Path -Path "$RegPath\$Key")){
 						#Case: Key does not exist
-						Write-Output "Key does not exits for this user"
+						Write-Error "Key: $RegPath does not exits for user: $Profile.Username"
 					} else {
 						#Key does exist!
-						Write-Host "Key Exists for this user!"
-						New-ItemProperty -Path "$RegPath\$Key" -Name "$Name" -PropertyType "$Type" -Value "$Value" -Force >> $Logfile
+						Write-Verbose "Key Exists for this user!"
+						New-ItemProperty -Path "$RegPath\$Key" -Name "$Name" -PropertyType "$Type" -Value "$Value" -Force | Out-Null
 					}
 				} Catch {
-					Write-Host "An error was encountered while creating registry settings for the current user."
-					Write-Host "$Error"
+					Write-Error "An error was encountered while creating registry settings for the current user."
+					Write-Error "$Error"
 				}
 				IF ($UnloadedHives -contains $Profile.SID) {
-					Write-Host "Trying to unload hive for current user"
+					Write-Verbose "Trying to unload hive for current user"
 					[gc]::collect()
-					reg unload HKU\$($Profile.SID)
+					reg unload HKU\$($Profile.SID) | Out-Null
 				}
-				Write-Host "-----------End Pass-----------"
+				Write-Verbose "-----------End Pass-----------"
 			}
 		}
     }
@@ -86,4 +81,3 @@ Function Set-HKCUGlobal {
 		$ProfileList,$UnloadedHives = Get-ProfileList
 		Commit-RegistrySettings $ProfileList $UnloadedHives
 	}
-}
