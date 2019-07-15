@@ -81,3 +81,4 @@ Function Set-HKCUGlobal {
 		$ProfileList,$UnloadedHives = Get-ProfileList
 		Commit-RegistrySettings $ProfileList $UnloadedHives
 	}
+}
