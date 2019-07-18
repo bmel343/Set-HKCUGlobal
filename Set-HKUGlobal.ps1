@@ -56,13 +56,14 @@ Function Set-HKCUGlobal {
 				Write-Verbose "Creating registy settings for this user..."
 				Try {
 					# Do Stuff Here
-					If (-not $(Test-Path -Path "$RegPath\$Key")){
-						#Case: Key does not exist
-						Write-Error "Key: $RegPath does not exits for user: $Profile.Username"
+					If (-not $(Test-Path -Path "$RegPath\$Path")){
+						# Key does not exist
+						Write-Verbose "Key: $Path does not exits for user: $($Profile.Username)"
+						Write-verbose "No changes will be made for this user"
 					} else {
 						#Key does exist!
-						Write-Verbose "Key Exists for this user!"
-						New-ItemProperty -Path "$RegPath\$Key" -Name "$Name" -PropertyType "$Type" -Value "$Value" -Force | Out-Null
+						Write-Verbose "Key: $RegPath\$Path Exists for this user!"
+						New-ItemProperty -Path "$RegPath\$Path" -Name "$Name" -PropertyType "$Type" -Value "$Value" -Force | Out-Null
 					}
 				} Catch {
 					Write-Error "An error was encountered while creating registry settings for the current user."
