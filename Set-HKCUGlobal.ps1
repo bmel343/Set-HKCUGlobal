@@ -6,7 +6,8 @@ Function Set-HKCUGlobal {
 		[Parameter()]
 		[ValidateSet('String','ExpandString','Binary','DWord','MultiString','Qword','Unknown')]
 		[string[]]$Type, 
-		[object] $Value
+		[object] $Value,
+		[switch] $Force
 	)
 	begin {
 		Write-Verbose "Calling Begin Block"
@@ -59,7 +60,16 @@ Function Set-HKCUGlobal {
 					If (-not $(Test-Path -Path "$RegPath\$Path")){
 						# Key does not exist
 						Write-Verbose "Key: $Path does not exits for user: $($Profile.Username)"
-						Write-verbose "No changes will be made for this user"
+						If ($Force){
+							Write-Verbose "FORCE parameter specified. Trying to create key"
+							Try{
+								New-Item -Path "$RegPath\$Path" | Out-Null
+							} Catch {
+								Write-Error "An errror was encounted while creating the registry key $RegPath\$Path for  $($Profile.Username)"
+								Write-verbose "No changes will be made for this user"
+								New-ItemProperty -Path "$RegPath\$Path" -Name "$Name" -PropertyType "$Type" -Value "$Value" -Force | Out-Null
+							}
+						}
 					} else {
 						#Key does exist!
 						Write-Verbose "Key: $RegPath\$Path Exists for this user!"
