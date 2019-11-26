@@ -64,10 +64,10 @@ Function Set-HKCUGlobal {
 							Write-Verbose "FORCE parameter specified. Trying to create key"
 							Try{
 								New-Item -Path "$RegPath\$Path" | Out-Null
+								New-ItemProperty -Path "$RegPath\$Path" -Name "$Name" -PropertyType "$Type" -Value "$Value" -Force | Out-Null
 							} Catch {
 								Write-Error "An errror was encounted while creating the registry key $RegPath\$Path for  $($Profile.Username)"
 								Write-verbose "No changes will be made for this user"
-								New-ItemProperty -Path "$RegPath\$Path" -Name "$Name" -PropertyType "$Type" -Value "$Value" -Force | Out-Null
 							}
 						}
 					} else {
